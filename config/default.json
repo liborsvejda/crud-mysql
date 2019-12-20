@@ -1,0 +1,12 @@
+{
+  "main": {
+    "corsOrigin": "localhost:8080"
+  },
+  "MySQL": {
+    "host": "localhost",
+    "user": "root",
+    "password": "root",
+    "database": "webapps",
+    "multipleStatements": true
+  }
+}

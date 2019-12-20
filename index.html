@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Jednoduchá CRUD SPA nad MySQL</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        table, th, td {
+            font-family: Calibri;
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 4px;
+        }
+        .table-edit {
+            border: none;
+            border-collapse: collapse;
+            padding: 4px;
+        }
+    </style>
+    <script>
+        const HOST = window.location.protocol + "//" + window.location.hostname + ((window.location.port) ? ":" + window.location.port : "");
+        let idEdit;
+        function ukazDen() {
+            let url = `${HOST}/denvtydnu`;
+            fetch(url).then(function(response) {
+                response.text().then(function(text) {
+                    let obj = JSON.parse(text);
+                    document.getElementById("den").innerHTML = obj.den.toLowerCase();
+                    document.getElementById("datum").innerHTML = obj.datum;
+                });
+            });
+        }
+        function naplnStudenty(studenti) {
+            let s = "<table class='table-list'>\n";
+            s += `<tr>`;
+            s += `<th>Jméno</th>`;
+            s += `<th>Příjmení</th>`;
+            s += `<th><a href="JavaScript:aktualizaceStudenta('')" title="Přidat..."><i class="material-icons">add</i></a></th>`;
+            s += `</tr>\n`;
+            for (let st of studenti) {
+                s += `<tr>`;
+                s += `<td id="jmeno@${st._id}">${st.jmeno}</td>`;
+                s += `<td id="prijmeni@${st._id}">${st.prijmeni}</td>`;
+                s += `<td><a href="JavaScript:aktualizaceStudenta('${st._id}')" title="Upravit..."><i class="material-icons">create</i></a><a href="JavaScript:smazStudenta('${st._id}')" title="Odstranit"><i class="material-icons">clear</i></a></td>`;
+                s += `</tr>\n`;
+            }
+            s += "</table>\n";
+            document.getElementById("studenti_list").innerHTML = s;
+        }
+        function nactiStudenty() {
+            let url = `${HOST}/studenti/list`;
+            fetch(url).then(function(response) {
+                response.text().then(function(text) {
+                    let obj = JSON.parse(text);
+                    naplnStudenty(obj.studenti);
+                });
+            });
+        }
+        function aktualizaceStudenta(_id) {
+            document.getElementById("studenti_edit").style.display = "block";
+            document.getElementById("studenti_list").style.display = "none";
+
+            idEdit = _id;
+            let jmeno = "";
+            let prijmeni = "";
+            if (_id) {
+                jmeno = document.getElementById(`jmeno@${_id}`).innerText;
+                prijmeni = document.getElementById(`prijmeni@${_id}`).innerText;
+            }
+            document.getElementById("jmeno").value = jmeno;
+            document.getElementById("prijmeni").value = prijmeni;
+            document.getElementById("jmeno").focus();
+        }
+        function aktualizujStudenta() {
+            let body = {};
+            let url = `${HOST}/studenti/add`;
+            if (idEdit) {
+                body._id = idEdit;
+                url = `${HOST}/studenti/update`;
+            }
+            body.jmeno = document.getElementById("jmeno").value;
+            body.prijmeni = document.getElementById("prijmeni").value;
+            let opt = {"method":"POST","body":JSON.stringify(body)};
+            fetch(url, opt).then(function(response) {
+                response.text().then(function(text) {
+                    let obj = JSON.parse(text);
+                    naplnStudenty(obj.studenti);
+                });
+            });
+        }
+        function smazStudenta(_id) {
+            let jmeno = document.getElementById(`jmeno@${_id}`).innerText;
+            let prijmeni = document.getElementById(`prijmeni@${_id}`).innerText;
+            if (!window.confirm(`Opravdu smazat ${jmeno} ${prijmeni}?`)) return;
+            let url = `${HOST}/studenti/delete`;
+            let body = { _id };
+            let opt = {"method":"POST","body":JSON.stringify(body)};
+            fetch(url, opt).then(function(response) {
+                response.text().then(function(text) {
+                    let obj = JSON.parse(text);
+                    naplnStudenty(obj.studenti);
+                });
+            });
+        }
+        function ukazStudenty() {
+            document.getElementById("studenti_edit").style.display = "none";
+            document.getElementById("studenti_list").style.display = "block";
+        }
+        function ulozit() {
+            if (!document.getElementById("jmeno").value || !document.getElementById("prijmeni").value) {
+                alert("Povinné hodnoty nejsou vyplněny!");
+                return;
+            };
+            aktualizujStudenta();
+            ukazStudenty();
+        }
+        function storno() {
+            ukazStudenty();
+        }
+        function onPressEnter(event) {
+            if (event.keyCode === 13) {
+                // Cancel the default action, if needed
+                event.preventDefault();
+                ulozit();
+            }
+            if (event.keyCode === 27) {
+                // Cancel the default action, if needed
+                event.preventDefault();
+                storno();
+            }
+        }
+        function spustPoNacteni() {
+            document.getElementById("jmeno").addEventListener("keyup", onPressEnter);
+            document.getElementById("prijmeni").addEventListener("keyup", onPressEnter);
+            ukazDen();
+            ukazStudenty();
+            nactiStudenty();
+        }
+    </script>
+</head>
+<body onload="spustPoNacteni()">
+
+<h1>Jednoduchá <a href="https://en.wikipedia.org/wiki/Create,_read,_update_and_delete" target="_blank">CRUD</a> <a href="https://en.wikipedia.org/wiki/Single-page_application" target="_blank">SPA</a> nad MySQL</h1>
+
+Dnes je <span id="den">...</span> <span id="datum">...</span>.
+<h3>Studenti</h3>
+<div id="studenti_edit">
+    <table class="table-edit">
+        <tr><td class="table-edit"><label for="jmeno">Jméno:</label></td><td class="table-edit"><input type="text" id="jmeno"></td></tr>
+        <tr><td class="table-edit"><label for="prijmeni">Příjmení:</label></td><td class="table-edit"><input type="text" id="prijmeni"></td></tr>
+        <tr><td class="table-edit"></td><td class="table-edit"><input type="button" value="Uložit" onclick="ulozit()"><input type="button" value="Storno" onclick="storno()"></tr>
+    </table>
+</div>
+<div id="studenti_list"></div>
+
+</body>
+</html>
+
