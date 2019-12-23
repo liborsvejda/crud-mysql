@@ -30,9 +30,10 @@ function checkDbConnection() {
 }
 checkDbConnection();
 
-const list = function (req, res, resObj) {
+const list = function (req, res, resObj, where = "") {
+    console.log(`### where: ${where}`);
     con.query(
-        `SELECT * FROM ${dbTbl}`,
+        `SELECT * FROM ${dbTbl} ${where}`,
         function (err, rows) {
             if (rows === undefined) {
                 resObj.error = "Error rows is undefined";
@@ -81,6 +82,20 @@ exports.apiStudenti = function (req, res, resObj) {
                 list(req, res, resObj);
             }
         )
+    } else if (req.pathname.endsWith("/search")) {
+        let where = "WHERE";
+        if (req.parameters.fulltext) {
+            where += ` jmeno LIKE '%${req.parameters.fulltext}%' OR prijmeni LIKE '%${req.parameters.fulltext}%'`;
+        } else {
+            where += " 1=0"
+            if (req.parameters.jmeno) {
+                where += ` OR jmeno LIKE '%${req.parameters.jmeno}%'`;
+            }
+            if (req.parameters.prijmeni) {
+                where += ` OR prijmeni LIKE '%${req.parameters.prijmeni}%'`;
+            }
+        }
+        list(req, res, resObj, where);
     }
 
 };

@@ -18,10 +18,10 @@
         }
     </style>
     <script>
-        const HOST = window.location.protocol + "//" + window.location.hostname + ((window.location.port) ? ":" + window.location.port : "");
+        const HOST = window.location.protocol + "//" + window.location.hostname + ((window.location.port) ? ":" + window.location.port : "") + ((window.location.pathname.indexOf("index.html") === -1) ? window.location.pathname : window.location.pathname.substr(0, window.location.pathname.indexOf("index.html")));
         let idEdit;
         function ukazDen() {
-            let url = `${HOST}/denvtydnu`;
+            let url = `${HOST}api/denvtydnu`;
             fetch(url).then(function(response) {
                 response.text().then(function(text) {
                     let obj = JSON.parse(text);
@@ -35,7 +35,7 @@
             s += `<tr>`;
             s += `<th>Jméno</th>`;
             s += `<th>Příjmení</th>`;
-            s += `<th><a href="JavaScript:aktualizaceStudenta('')" title="Přidat..."><i class="material-icons">add</i></a></th>`;
+            s += `<th><a href="JavaScript:aktualizaceStudenta('')" title="Přidat..."><i class="material-icons">add</i></a><a href="JavaScript:vyhledaniStudentu()" title="Vyhledat..."><i class="material-icons">search</i></a></th>`;
             s += `</tr>\n`;
             for (let st of studenti) {
                 s += `<tr>`;
@@ -48,7 +48,7 @@
             document.getElementById("studenti_list").innerHTML = s;
         }
         function nactiStudenty() {
-            let url = `${HOST}/studenti/list`;
+            let url = `${HOST}api/studenti/list`;
             fetch(url).then(function(response) {
                 response.text().then(function(text) {
                     let obj = JSON.parse(text);
@@ -58,6 +58,7 @@
         }
         function aktualizaceStudenta(_id) {
             document.getElementById("studenti_edit").style.display = "block";
+            document.getElementById("studenti_search").style.display = "none";
             document.getElementById("studenti_list").style.display = "none";
 
             idEdit = _id;
@@ -73,10 +74,10 @@
         }
         function aktualizujStudenta() {
             let body = {};
-            let url = `${HOST}/studenti/add`;
+            let url = `${HOST}api/studenti/add`;
             if (idEdit) {
                 body._id = idEdit;
-                url = `${HOST}/studenti/update`;
+                url = `${HOST}api/studenti/update`;
             }
             body.jmeno = document.getElementById("jmeno").value;
             body.prijmeni = document.getElementById("prijmeni").value;
@@ -92,8 +93,45 @@
             let jmeno = document.getElementById(`jmeno@${_id}`).innerText;
             let prijmeni = document.getElementById(`prijmeni@${_id}`).innerText;
             if (!window.confirm(`Opravdu smazat ${jmeno} ${prijmeni}?`)) return;
-            let url = `${HOST}/studenti/delete`;
+            let url = `${HOST}api/studenti/delete`;
             let body = { _id };
+            let opt = {"method":"POST","body":JSON.stringify(body)};
+            fetch(url, opt).then(function(response) {
+                response.text().then(function(text) {
+                    let obj = JSON.parse(text);
+                    naplnStudenty(obj.studenti);
+                });
+            });
+        }
+        function vyhledaniStudentu() {
+            document.getElementById("studenti_search").style.display = "block";
+            //document.getElementById("studenti_list").style.display = "none";
+            prepnutiTypuVyhledani();
+        }
+        function prepnutiTypuVyhledani() {
+            document.getElementById("studenti_list").innerHTML = "";
+            if (document.getElementById("search_type").value === "fulltext") {
+                document.getElementById("div_search_fulltext").style.display = "inline";
+                document.getElementById("div_search_advanced").style.display = "none";
+
+                document.getElementById("search_fulltext").focus();
+            } else {
+                document.getElementById("div_search_fulltext").style.display = "none";
+                document.getElementById("div_search_advanced").style.display = "block";
+
+                document.getElementById("search_jmeno").focus();
+            };
+
+        }
+        function vyhledatStudenty(_id) {
+            let body = {};
+            if (document.getElementById("search_type").value === "fulltext") {
+                body.fulltext = document.getElementById("search_fulltext").value;
+            } else {
+                body.jmeno = document.getElementById("search_jmeno").value;
+                body.prijmeni = document.getElementById("search_prijmeni").value;
+            }
+            let url = `${HOST}api/studenti/search`;
             let opt = {"method":"POST","body":JSON.stringify(body)};
             fetch(url, opt).then(function(response) {
                 response.text().then(function(text) {
@@ -104,7 +142,9 @@
         }
         function ukazStudenty() {
             document.getElementById("studenti_edit").style.display = "none";
+            document.getElementById("studenti_search").style.display = "none";
             document.getElementById("studenti_list").style.display = "block";
+            nactiStudenty();
         }
         function ulozit() {
             if (!document.getElementById("jmeno").value || !document.getElementById("prijmeni").value) {
@@ -149,6 +189,19 @@ Dnes je <span id="den">...</span> <span id="datum">...</span>.
         <tr><td class="table-edit"><label for="jmeno">Jméno:</label></td><td class="table-edit"><input type="text" id="jmeno"></td></tr>
         <tr><td class="table-edit"><label for="prijmeni">Příjmení:</label></td><td class="table-edit"><input type="text" id="prijmeni"></td></tr>
         <tr><td class="table-edit"></td><td class="table-edit"><input type="button" value="Uložit" onclick="ulozit()"><input type="button" value="Storno" onclick="storno()"></tr>
+    </table>
+</div>
+<div id="studenti_search">
+    <select id="search_type" onchange="prepnutiTypuVyhledani()"><option value="fulltext">vyhledat kdekoliv:</option><option value="advanced">vyhledat podrobně</option></select>
+    <span id="div_search_fulltext">
+        <input type="text" id="search_fulltext">
+        <input type="button" value="Vyhledat" onclick="vyhledatStudenty()"><input type="button" value="Storno" onclick="storno()">
+        <br>
+    </span>
+    <table class="table-edit" id="div_search_advanced">
+        <tr><td class="table-edit"><label for="search_jmeno">Jméno:</label></td><td class="table-edit"><input type="text" id="search_jmeno"></td></tr>
+        <tr><td class="table-edit"><label for="search_prijmeni">Příjmení:</label></td><td class="table-edit"><input type="text" id="search_prijmeni"></td></tr>
+        <tr><td class="table-edit"></td><td class="table-edit"><input type="button" value="Vyhledat" onclick="vyhledatStudenty()"><input type="button" value="Storno" onclick="storno()"></tr>
     </table>
 </div>
 <div id="studenti_list"></div>

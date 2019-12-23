@@ -16,9 +16,9 @@ function processApi(req, res) {
     res.writeHead(200, API_HEAD);
     let obj = {};
     obj.status = API_STATUS_OK;
-    if (req.pathname === "/denvtydnu") {
+    if (req.pathname === "/api/denvtydnu") {
         apiDenVTydnu(req, res, obj);
-    } else if (req.pathname.startsWith("/studenti/")) {
+    } else if (req.pathname.startsWith("/api/studenti/")) {
         apiStudenti(req, res, obj);
     } else {
         obj.status = API_STATUS_NOT_FOUND;
